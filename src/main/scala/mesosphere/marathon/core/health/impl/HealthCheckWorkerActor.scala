@@ -26,7 +26,7 @@ class HealthCheckWorkerActor(implicit mat: Materializer) extends Actor {
 
   import HealthCheckWorker._
 
-  implicit val system = context.system
+  private implicit val system = context.system
   import context.dispatcher // execution context for futures
 
   private[this] val log = LoggerFactory.getLogger(getClass)
@@ -56,9 +56,9 @@ class HealthCheckWorkerActor(implicit mat: Materializer) extends Actor {
     val effectiveIpAddress = instance.appTask.status.networkInfo.effectiveIpAddress(app)
     effectiveIpAddress match {
       case Some(host) =>
-        val port = check.effectivePort(app, instance)
-        check match {
-          case hc: MarathonHttpHealthCheck =>
+        val maybePort = check.effectivePort(app, instance)
+        (check, maybePort) match {
+          case (hc: MarathonHttpHealthCheck, Some(port)) =>
             hc.protocol match {
               case Protos.HealthCheckDefinition.Protocol.HTTPS => https(instance, hc, host, port)
               case Protos.HealthCheckDefinition.Protocol.HTTP => http(instance, hc, host, port)
@@ -69,7 +69,12 @@ class HealthCheckWorkerActor(implicit mat: Materializer) extends Actor {
                   new UnsupportedOperationException(message)
                 }
             }
-          case hc: MarathonTcpHealthCheck => tcp(instance, hc, host, port)
+          case (hc: MarathonTcpHealthCheck, Some(port)) => tcp(instance, hc, host, port)
+          case _ => Future.failed {
+            val message = "Health check failed: unable to get the task's effectivePort"
+            log.warn(message)
+            new UnsupportedOperationException(message)
+          }
         }
       case None =>
         Future.failed {

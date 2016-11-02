@@ -101,7 +101,8 @@ case class CuratorZk(
     maxVersions: Int,
     versionCacheConfig: Option[VersionCacheConfig],
     availableFeatures: Set[String],
-    backupLocation: Option[String]
+    backupLocation: Option[String],
+    defaultNetworkName: Option[String]
 ) extends PersistenceStorageConfig[ZkId, String, ZkSerialized] {
 
   lazy val client: RichCuratorFramework = {
@@ -159,7 +160,8 @@ object CuratorZk {
       maxVersions = conf.maxVersions(),
       versionCacheConfig = if (conf.versionCacheEnabled()) StorageConfig.DefaultVersionCacheConfig else None,
       availableFeatures = conf.availableFeatures,
-      backupLocation = conf.backupLocation.get
+      backupLocation = conf.backupLocation.get,
+      defaultNetworkName = conf.defaultNetworkName.get
     )
 
   def apply(config: Config): CuratorZk = {
@@ -187,7 +189,8 @@ object CuratorZk {
       versionCacheConfig =
         if (config.bool("version-cache-enabled", true)) StorageConfig.DefaultVersionCacheConfig else None,
       availableFeatures = config.stringList("available-features", Seq.empty).to[Set],
-      backupLocation = config.optionalString("backup-location")
+      backupLocation = config.optionalString("backup-location"),
+      defaultNetworkName = config.optionalString("default-network-name")
     )
   }
 }
@@ -195,7 +198,8 @@ object CuratorZk {
 case class InMem(
     maxVersions: Int,
     availableFeatures: Set[String],
-    backupLocation: Option[String]
+    backupLocation: Option[String],
+    defaultNetworkName: Option[String]
 ) extends PersistenceStorageConfig[RamId, String, Identity] {
   override val cacheType: CacheType = NoCaching
   override val versionCacheConfig: Option[VersionCacheConfig] = None
@@ -209,13 +213,14 @@ object InMem {
   val StoreName = "mem"
 
   def apply(conf: StorageConf): InMem =
-    InMem(conf.maxVersions(), conf.availableFeatures, conf.backupLocation.get)
+    InMem(conf.maxVersions(), conf.availableFeatures, conf.backupLocation.get, conf.defaultNetworkName.get)
 
   def apply(conf: Config): InMem =
     InMem(
       conf.int("max-versions", StorageConfig.DefaultMaxVersions),
       availableFeatures = conf.stringList("available-features", Seq.empty).to[Set],
-      backupLocation = conf.optionalString("backup-location")
+      backupLocation = conf.optionalString("backup-location"),
+      defaultNetworkName = conf.optionalString("default-network-name")
     )
 }
 

@@ -24,6 +24,7 @@ import mesosphere.marathon.storage.migration.legacy.MigrationTo_1_4_2
 @SuppressWarnings(Array("UnusedMethodParameter")) // materializer will definitely be used in the future.
 class Migration(
     private[migration] val availableFeatures: Set[String],
+    private[migration] val defaultNetworkName: Option[String],
     private[migration] val persistenceStore: PersistenceStore[_, _, _],
     private[migration] val appRepository: AppRepository,
     private[migration] val groupRepository: GroupRepository,
@@ -33,6 +34,7 @@ class Migration(
     private[migration] val taskFailureRepo: TaskFailureRepository,
     private[migration] val frameworkIdRepo: FrameworkIdRepository,
     private[migration] val eventSubscribersRepo: EventSubscribersRepository,
+    private[migration] val serviceDefinitionRepo: ServiceDefinitionRepository,
     private[migration] val backup: PersistentStoreBackup)(implicit mat: Materializer) extends StrictLogging {
 
   import StorageVersions._
@@ -51,7 +53,10 @@ class Migration(
         new MigrationTo_1_4_2(appRepository).migrate().recover {
           case NonFatal(e) => throw new MigrationFailedException("while migrating storage to 1.4.2", e)
         }
-      }
+      },
+      StorageVersions(1, 5, 0, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> (() =>
+        MigrationTo1_5(this).migrate()
+      )
     )
 
   def applyMigrationSteps(from: StorageVersion): Future[Seq[StorageVersion]] = {
@@ -69,7 +74,7 @@ class Migration(
   @SuppressWarnings(Array("all")) // async/await
   def migrate(): Seq[StorageVersion] = {
     val result = async {
-      val currentVersion = await(getCurrentVersion())
+      val currentVersion = await(getCurrentVersion)
 
       val currentBuildVersion = StorageVersions.current
 
@@ -108,7 +113,7 @@ class Migration(
     migrations
   }
 
-  private def getCurrentVersion(): Future[Option[StorageVersion]] =
+  private def getCurrentVersion: Future[Option[StorageVersion]] =
     persistenceStore.storageVersion()
 
   private def storeCurrentVersion(): Future[Done] =
