@@ -2,7 +2,7 @@ package mesosphere.marathon
 package integration.setup
 
 import java.io.File
-//import java.nio.file.Files
+import java.nio.file.Files
 
 import akka.Done
 import akka.actor.{ ActorSystem, Scheduler }
@@ -54,11 +54,10 @@ case class MesosLocal(
     file.getAbsolutePath
   }
 
-  private lazy val mesosWorkDir: File = {
-    new File("/Users/kjeschkies/Projects/marathon/mesos-workdir")
-    //    val tmp = Files.createTempDirectory("mesos-local").toFile
-    //    tmp.deleteOnExit()
-    //    tmp
+  private lazy val mesosWorkDir = {
+    val tmp = Files.createTempDirectory("mesos-local").toFile
+    tmp.deleteOnExit()
+    tmp
   }
 
   private lazy val mesosEnv = {
@@ -147,7 +146,7 @@ case class MesosLocal(
   override def close(): Unit = {
     Try(clean())
     Try(stop())
-    //    Try(FileUtils.deleteDirectory(mesosWorkDir))
+    Try(FileUtils.deleteDirectory(mesosWorkDir))
   }
 }
 
@@ -263,7 +262,7 @@ case class MesosCluster(
 
   case class Mesos(master: Boolean, extraArgs: Seq[String]) extends AutoCloseable {
     val port = PortAllocator.ephemeralPort()
-    private val workDir: File = new File("/Users/kjeschkies/Projects/marathon/mesos-workdir") //Files.createTempDirectory(s"mesos-master$port").toFile
+    private val workDir = Files.createTempDirectory(s"mesos-master$port").toFile
     private val processBuilder = Process(
       command = Seq(
       "mesos",
@@ -295,7 +294,7 @@ case class MesosCluster(
 
     override def close(): Unit = {
       stop()
-      //      Try(FileUtils.deleteDirectory(workDir))
+      Try(FileUtils.deleteDirectory(workDir))
     }
   }
 

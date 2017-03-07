@@ -4,8 +4,8 @@ package integration
 import java.util.UUID
 import mesosphere.AkkaIntegrationTest
 import mesosphere.marathon.api.v2.json.GroupUpdate
-import mesosphere.marathon.integration.setup.{ EmbeddedMarathonTest, IntegrationHealthCheck /*, WaitTestSupport*/ }
-import mesosphere.marathon.state.{ AppDefinition, PathId /*, UpgradeStrategy*/ }
+import mesosphere.marathon.integration.setup.{ EmbeddedMarathonTest, IntegrationHealthCheck, WaitTestSupport }
+import mesosphere.marathon.state.{ AppDefinition, PathId, UpgradeStrategy }
 import org.apache.http.HttpStatus
 import spray.http.DateTime
 
