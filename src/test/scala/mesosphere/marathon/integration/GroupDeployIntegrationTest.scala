@@ -1,7 +1,7 @@
 package mesosphere.marathon
 package integration
 
-import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import mesosphere.AkkaIntegrationTest
 import mesosphere.marathon.api.v2.json.GroupUpdate
 import mesosphere.marathon.integration.setup.{ EmbeddedMarathonTest, IntegrationHealthCheck, WaitTestSupport }
@@ -17,8 +17,11 @@ class GroupDeployIntegrationTest extends AkkaIntegrationTest with EmbeddedMarath
   //clean up state before running the test case
   before(cleanUp())
 
-  def nextAppId(): String = s"app-${UUID.randomUUID}"
-  def nextGroupId(): PathId = s"group-${UUID.randomUUID()}".toRootTestPath
+  val appIdCount = new AtomicInteger()
+  val groupIdCount = new AtomicInteger()
+
+  def nextAppId(): String = s"app-${appIdCount.getAndIncrement()}"
+  def nextGroupId(): PathId = s"group-${groupIdCount.getAndIncrement()}".toRootTestPath
 
   "GroupDeployment" should {
     "create empty group successfully" in {
@@ -253,7 +256,7 @@ class GroupDeployIntegrationTest extends AkkaIntegrationTest with EmbeddedMarath
     "Groups with Applications with circular dependencies can not get deployed" in {
       Given("A group with 3 circular dependent applications")
       val gid = nextGroupId()
-      val db = appProxy(gid / "db", "v1", 1, dependencies = Set("/test/frontend1".toTestPath))
+      val db = appProxy(gid / "db", "v1", 1, dependencies = Set(gid / "frontend1"))
       val service = appProxy(gid / "service", "v1", 1, dependencies = Set(db.id))
       val frontend = appProxy(gid / "frontend1", "v1", 1, dependencies = Set(service.id))
       val group = GroupUpdate(gid, Set(db, service, frontend))
@@ -301,8 +304,8 @@ class GroupDeployIntegrationTest extends AkkaIntegrationTest with EmbeddedMarath
         Set.empty[AppDefinition],
         Set(
           GroupUpdate(PathId("db"), apps = Set(db)),
-          GroupUpdate(PathId("service"), apps = Set(service)).copy(dependencies = Some(Set("/test/db".toTestPath))),
-          GroupUpdate(PathId("frontend"), apps = Set(frontend)).copy(dependencies = Some(Set("/test/service".toTestPath)))
+          GroupUpdate(PathId("service"), apps = Set(service)).copy(dependencies = Some(Set(db.id))),
+          GroupUpdate(PathId("frontend"), apps = Set(frontend)).copy(dependencies = Some(Set(service.id))
         )
       )
 
