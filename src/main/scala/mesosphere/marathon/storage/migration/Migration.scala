@@ -50,9 +50,7 @@ class Migration(
   def migrations: List[MigrationAction] =
     List(
       StorageVersions(1, 4, 2, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> { () =>
-        new MigrationTo_1_4_2(appRepository).migrate().recover {
-          case NonFatal(e) => throw new MigrationFailedException("while migrating storage to 1.4.2", e)
-        }
+        new MigrationTo_1_4_2(appRepository).migrate()
       },
       StorageVersions(1, 5, 0, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> (() =>
         MigrationTo1_5(this).migrate()
@@ -66,7 +64,9 @@ class Migration(
           s"Migration for storage: ${from.str} to current: ${current.str}: " +
             s"apply change for version: ${migrateVersion.str} "
         )
-        change.apply().map(_ => res :+ migrateVersion)
+        change.apply().recover {
+          case NonFatal(e) => throw new MigrationFailedException(s"while migrating storage to $migrateVersion", e)
+        }.map(_ => res :+ migrateVersion)
       }
     }
   }
