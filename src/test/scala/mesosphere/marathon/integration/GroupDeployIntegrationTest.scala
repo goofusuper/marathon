@@ -305,7 +305,7 @@ class GroupDeployIntegrationTest extends AkkaIntegrationTest with EmbeddedMarath
         Set(
           GroupUpdate(PathId("db"), apps = Set(db)),
           GroupUpdate(PathId("service"), apps = Set(service)).copy(dependencies = Some(Set(db.id))),
-          GroupUpdate(PathId("frontend"), apps = Set(frontend)).copy(dependencies = Some(Set(service.id))
+          GroupUpdate(PathId("frontend"), apps = Set(frontend)).copy(dependencies = Some(Set(service.id)))
         )
       )
 
