@@ -196,7 +196,16 @@ case class MesosCluster(
       }
     }
 
-    await(result).headers.find(_.lowercaseName() == "location").map(_.value()).get
+    def maybeFixURI(uri: String): String = {
+      // some versions of mesos issue redirects with broken Location headers; fix them here
+      if (uri.indexOf("//") == 0) {
+        "http:" + uri
+      } else {
+        uri
+      }
+    }
+
+    maybeFixURI(await(result).headers.find(_.lowercaseName() == "location").map(_.value()).get)
   }
 
   def stop(): Unit = {

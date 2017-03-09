@@ -38,9 +38,11 @@ private[storage] object ServiceDefinitionRepository {
     persistenceStore: PersistenceStore[RamId, String, Identity]): ServiceDefinitionRepository = {
 
     // not needed for now
-    implicit val memMarshaler: Marshaller[ServiceDefinition, Identity] = ???
+    implicit val memMarshaller: Marshaller[ServiceDefinition, Identity] = Marshaller[ServiceDefinition, Identity] { _ =>
+      throw new UnsupportedOperationException("marshalling is not supported here")
+    }
 
-    implicit val memUnmarshaler: Unmarshaller[Identity, ServiceDefinition] =
+    implicit val memUnmarshaller: Unmarshaller[Identity, ServiceDefinition] =
       InMemoryStoreSerialization.unmarshaller[ServiceDefinition]
 
     new ServiceDefinitionRepositoryImpl(persistenceStore)
@@ -50,8 +52,11 @@ private[storage] object ServiceDefinitionRepository {
     persistenceStore: PersistenceStore[ZkId, String, ZkSerialized]): ServiceDefinitionRepository = {
 
     // not needed for now
-    implicit val zkMarshaler: Marshaller[ServiceDefinition, ZkSerialized] = ???
-    implicit val zkUnmarshaler: Unmarshaller[ZkSerialized, ServiceDefinition] = Unmarshaller.strict {
+    implicit val zkMarshaller: Marshaller[ServiceDefinition, ZkSerialized] = Marshaller[ServiceDefinition, ZkSerialized] { _ =>
+      throw new UnsupportedOperationException("marshalling is not supported here")
+    }
+
+    implicit val zkUnmarshaller: Unmarshaller[ZkSerialized, ServiceDefinition] = Unmarshaller.strict {
       case ZkSerialized(byteString) => ServiceDefinition.parseFrom(byteString.toArray)
     }
 
